@@ -29,6 +29,10 @@ services:
     networks:
       - iterp-network
     restart: unless-stopped
+    # Resource limits for Next.js app
+    mem_limit: 2g
+    mem_reservation: 512m
+    cpus: 2.0
 
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -50,11 +54,13 @@ services:
     mem_reservation: 4g
     cpus: 4.0
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Sipamara123! -C -Q \"SELECT 1\" -b || exit 1"]
+      # FIXED: Use correct tools path for SQL Server 2022
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Sipamara123! -C -Q \"SELECT 1\" -b || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 30
-      start_period: 120s
+      # FIXED: Increased start period for SQL Server 2022 initialization
+      start_period: 180s
 
 networks:
   iterp-network:
@@ -80,7 +86,41 @@ docker-compose up -d
 
 Write-Host ""
 Write-Host "⏳ Waiting for services to be ready..." -ForegroundColor Yellow
-Start-Sleep -Seconds 10
+Write-Host "   (This may take 3-4 minutes for SQL Server to initialize)" -ForegroundColor Gray
+
+# Wait for MSSQL to become healthy
+$maxWait = 300  # 5 minutes
+$elapsed = 0
+$containerName = "docker-demo-iterp-mssql-1"
+
+while ($elapsed -lt $maxWait) {
+    $status = docker inspect $containerName --format '{{.State.Health.Status}}' 2>$null
+    if ($status -eq "healthy") {
+        Write-Host "   ✓ Database is healthy!" -ForegroundColor Green
+        break
+    }
+    Start-Sleep -Seconds 10
+    $elapsed += 10
+    Write-Host "." -NoNewline -ForegroundColor Gray
+}
+
+Write-Host ""
+
+# Configure SQL Server max memory (optional but recommended)
+if ($status -eq "healthy") {
+    Write-Host "🔧 Configuring SQL Server memory settings..." -ForegroundColor Yellow
+    
+    # Configure max server memory to 5632 MB (leaves 512MB for OS)
+    docker exec $containerName /opt/mssql-tools18/bin/sqlcmd `
+        -S localhost `
+        -U sa `
+        -P Sipamara123! `
+        -C `
+        -Q "EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'max server memory (MB)', 5632; RECONFIGURE;" `
+        2>&1 | Out-Null
+    
+    Write-Host "   ✓ SQL Server memory configured to 5632 MB" -ForegroundColor Green
+}
 
 Write-Host ""
 Write-Host "✅ IT ERP System is running!" -ForegroundColor Green

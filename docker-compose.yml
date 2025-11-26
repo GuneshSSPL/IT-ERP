@@ -20,6 +20,10 @@ services:
     networks:
       - iterp-network
     restart: unless-stopped
+    # Resource limits for Next.js app
+    mem_limit: 2g
+    mem_reservation: 512m
+    cpus: 2.0
 
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -28,6 +32,7 @@ services:
       - SA_PASSWORD=Sipamara123!
       - MSSQL_PID=Developer
       - MSSQL_AGENT_ENABLED=true
+      - MSSQL_MEMORY_LIMIT_MB=6144
     ports:
       - "1433:1433"
     volumes:
@@ -40,11 +45,13 @@ services:
     mem_reservation: 4g
     cpus: 4.0
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Sipamara123! -C -Q \"SELECT 1\" -b || exit 1"]
+      # FIXED: Use correct tools path for SQL Server 2022
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Sipamara123! -C -Q \"SELECT 1\" -b || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 30
-      start_period: 120s
+      # FIXED: Increased start period for SQL Server 2022 initialization
+      start_period: 180s
 
 networks:
   iterp-network:
