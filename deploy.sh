@@ -1,0 +1,68 @@
+#!/bin/bash
+# IT ERP System - One-Command Deployment Script
+# This script creates docker-compose.yml and starts the system
+
+cat > docker-compose.yml << 'EOF'
+version: '3.8'
+
+services:
+  nextjs-app:
+    image: sipamara/iterp-app:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_USERNAME=sa
+      - DB_PASSWORD=sipamara
+      - DB_DATABASE=ITERP
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_DIALECT=mssql
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=7d
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    depends_on:
+      mssql:
+        condition: service_healthy
+    networks:
+      - iterp-network
+    restart: unless-stopped
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=sipamara
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    networks:
+      - iterp-network
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P sipamara -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+networks:
+  iterp-network:
+    driver: bridge
+
+volumes:
+  mssql-data:
+EOF
+
+echo "Starting IT ERP System..."
+docker-compose up -d
+
+echo ""
+echo "✅ IT ERP System is starting!"
+echo "📊 Access at: http://localhost:3000"
+echo "🔑 Login: admin@iterp.com / admin123"
+echo ""
+echo "View logs: docker-compose logs -f"
+echo "Stop system: docker-compose down"
+
