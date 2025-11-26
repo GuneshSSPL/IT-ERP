@@ -7,8 +7,6 @@ Write-Host ""
 
 # Create docker-compose.yml
 @"
-version: '3.8'
-
 services:
   nextjs-app:
     image: sipamara/iterp-app:latest
@@ -17,7 +15,7 @@ services:
     environment:
       - NODE_ENV=production
       - DB_USERNAME=sa
-      - DB_PASSWORD=sipamara
+      - DB_PASSWORD=Sipamara123!
       - DB_DATABASE=ITERP
       - DB_HOST=mssql
       - DB_PORT=1433
@@ -36,8 +34,9 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=sipamara
+      - SA_PASSWORD=Sipamara123!
       - MSSQL_PID=Developer
+      - MSSQL_AGENT_ENABLED=true
     ports:
       - "1433:1433"
     volumes:
@@ -45,11 +44,18 @@ services:
     networks:
       - iterp-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P sipamara -Q "SELECT 1" || exit 1
-      interval: 10s
-      timeout: 3s
-      retries: 10
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Sipamara123!' -Q 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
 
 networks:
   iterp-network:
