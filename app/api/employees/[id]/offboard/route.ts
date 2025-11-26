@@ -6,7 +6,7 @@ import sql from "mssql"
 async function handler(
   req: NextRequest,
   user: { userId: number; email: string; roleId: number; employeeId: string },
-  context?: { params?: Promise<{ id: string }> }
+  context?: { params?: Promise<Record<string, string>> }
 ) {
   if (req.method === "GET") {
     try {

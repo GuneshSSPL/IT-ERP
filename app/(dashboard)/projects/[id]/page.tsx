@@ -19,7 +19,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import Link from "next/link"
 
 interface ProjectDetail {
   project: any
@@ -37,11 +36,19 @@ export default function ProjectDetailPage() {
   const [data, setData] = useState<ProjectDetail | null>(null)
   const [loading, setLoading] = useState(true)
 
+  if (!params?.id) {
+    return <div>Invalid project ID</div>
+  }
+
   useEffect(() => {
-    fetchProjectDetail()
-  }, [params.id])
+    if (params?.id) {
+      fetchProjectDetail()
+    }
+  }, [params?.id])
 
   const fetchProjectDetail = async () => {
+    if (!params?.id) return
+    
     try {
       const { getStoredToken } = await import("@/lib/utils/storage")
       const token = getStoredToken()
@@ -138,7 +145,7 @@ export default function ProjectDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/projects/${params.id}/team-match`)}
+            onClick={() => params?.id && router.push(`/projects/${params.id}/team-match`)}
           >
             <Users className="h-4 w-4 mr-2" />
             Skill Match

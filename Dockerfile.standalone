@@ -1,0 +1,91 @@
+# Standalone Dockerfile - Everything in One Container
+# This creates a single self-contained image with both app and database
+
+# Base stage - MSSQL Server
+FROM mcr.microsoft.com/mssql/server:2022-latest AS mssql-base
+
+# Application build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Final stage - Combine everything
+FROM ubuntu:22.04
+
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    ca-certificates \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
+# Install MSSQL Server dependencies
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y mssql-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy MSSQL Server from official image
+COPY --from=mcr.microsoft.com/mssql/server:2022-latest /opt/mssql /opt/mssql
+COPY --from=mcr.microsoft.com/mssql/server:2022-latest /usr/local/bin /usr/local/bin
+
+# Set up application
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install production dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built application from builder
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.mjs ./
+COPY --from=builder /app/tsconfig.json ./
+
+# Copy lib directory (needed for database initialization at runtime)
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/types ./types
+
+# Set up MSSQL
+ENV ACCEPT_EULA=Y
+ENV SA_PASSWORD=sipamara
+ENV MSSQL_PID=Developer
+
+# Create supervisor configuration
+RUN mkdir -p /etc/supervisor/conf.d
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create startup script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Expose ports
+EXPOSE 3000 1433
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+

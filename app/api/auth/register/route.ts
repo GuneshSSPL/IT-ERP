@@ -53,18 +53,18 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10)
 
     const pool = await getConnection()
-    const request = pool.request()
-    request.input("email", email)
-    request.input("password_hash", passwordHash)
-    request.input("first_name", firstName)
-    request.input("last_name", lastName)
-    request.input("employee_id", employeeId)
-    request.input("phone", phone || null)
-    request.input("department_id", departmentId || null)
-    request.input("role_id", roleId)
-    request.input("is_active", true)
+    const dbRequest = pool.request()
+    dbRequest.input("email", email)
+    dbRequest.input("password_hash", passwordHash)
+    dbRequest.input("first_name", firstName)
+    dbRequest.input("last_name", lastName)
+    dbRequest.input("employee_id", employeeId)
+    dbRequest.input("phone", phone || null)
+    dbRequest.input("department_id", departmentId || null)
+    dbRequest.input("role_id", roleId)
+    dbRequest.input("is_active", true)
 
-    const result = await request.query(`
+    const result = await dbRequest.query(`
       INSERT INTO users (email, password_hash, first_name, last_name, employee_id, phone, department_id, role_id, is_active, hire_date, created_at, updated_at)
       OUTPUT INSERTED.id, INSERTED.email, INSERTED.first_name, INSERTED.last_name, INSERTED.employee_id, INSERTED.role_id
       VALUES (@email, @password_hash, @first_name, @last_name, @employee_id, @phone, @department_id, @role_id, @is_active, GETDATE(), GETDATE(), GETDATE())

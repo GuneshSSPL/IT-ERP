@@ -7,7 +7,7 @@ import { findBestMatches, type EmployeeSkill, type ProjectSkill } from "@/lib/ut
 async function handler(
   req: NextRequest,
   user: { userId: number; email: string; roleId: number; employeeId: string },
-  context?: { params?: Promise<{ id: string }> }
+  context?: { params?: Promise<Record<string, string>> }
 ) {
   try {
     if (!context?.params) {

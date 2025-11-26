@@ -26,11 +26,19 @@ export default function TeamMatchPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<number>>(new Set())
 
+  if (!params?.id) {
+    return <div>Invalid project ID</div>
+  }
+
   useEffect(() => {
-    fetchSkillMatches()
-  }, [params.id])
+    if (params?.id) {
+      fetchSkillMatches()
+    }
+  }, [params?.id])
 
   const fetchSkillMatches = async () => {
+    if (!params?.id) return
+    
     try {
       const { getStoredToken } = await import("@/lib/utils/storage")
       const token = getStoredToken()
@@ -60,7 +68,7 @@ export default function TeamMatchPage() {
   }
 
   const handleAssign = async () => {
-    if (selected.size === 0) return
+    if (selected.size === 0 || !params?.id) return
 
     try {
       const { getStoredToken } = await import("@/lib/utils/storage")
@@ -81,7 +89,9 @@ export default function TeamMatchPage() {
         throw new Error("Failed to assign employees")
       }
 
-      router.push(`/projects/${params.id}`)
+      if (params?.id) {
+        router.push(`/projects/${params.id}`)
+      }
     } catch (error) {
       console.error("Error assigning employees:", error)
     }
@@ -104,7 +114,7 @@ export default function TeamMatchPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push(`/projects/${params.id}`)}
+            onClick={() => params?.id && router.push(`/projects/${params.id}`)}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

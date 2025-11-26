@@ -18,10 +18,14 @@ export default function OffboardPage() {
   const [revokeAssets, setRevokeAssets] = useState(false)
 
   useEffect(() => {
-    fetchOffboardData()
-  }, [params.id])
+    if (params?.id) {
+      fetchOffboardData()
+    }
+  }, [params?.id])
 
   const fetchOffboardData = async () => {
+    if (!params?.id) return
+    
     try {
       const { getStoredToken } = await import("@/lib/utils/storage")
       const token = getStoredToken()
@@ -50,6 +54,8 @@ export default function OffboardPage() {
   }
 
   const handleOffboard = async () => {
+    if (!params?.id) return
+    
     try {
       const { getStoredToken } = await import("@/lib/utils/storage")
       const token = getStoredToken()

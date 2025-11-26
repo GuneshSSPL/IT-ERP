@@ -33,6 +33,9 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./
 COPY --from=builder /app/tsconfig.json ./
+# Copy lib directory (needed for database initialization at runtime)
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/types ./types
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
