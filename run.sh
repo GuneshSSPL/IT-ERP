@@ -47,18 +47,21 @@ services:
     networks:
       - iterp-network
     restart: unless-stopped
+    # MSSQL optimized with 6GB RAM for faster startup
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 6G
+          cpus: '4.0'
         reservations:
-          memory: 1G
+          memory: 4G
+          cpus: '2.0'
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Sipamara123!' -Q 'SELECT 1' || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 20
-      start_period: 60s
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
 
 networks:
   iterp-network:
