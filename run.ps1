@@ -37,6 +37,7 @@ services:
       - SA_PASSWORD=Sipamara123!
       - MSSQL_PID=Developer
       - MSSQL_AGENT_ENABLED=true
+      - MSSQL_MEMORY_LIMIT_MB=6144
     ports:
       - "1433:1433"
     volumes:
@@ -44,21 +45,16 @@ services:
     networks:
       - iterp-network
     restart: unless-stopped
-    # MSSQL optimized with 6GB RAM for faster startup
-    deploy:
-      resources:
-        limits:
-          memory: 6G
-          cpus: '4.0'
-        reservations:
-          memory: 4G
-          cpus: '2.0'
+    # Use mem_limit for better compatibility with all Docker versions
+    mem_limit: 6g
+    mem_reservation: 4g
+    cpus: 4
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Sipamara123!' -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Sipamara123!' -Q 'SELECT 1' -h -1 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 30
-      start_period: 90s
+      start_period: 120s
 
 networks:
   iterp-network:
